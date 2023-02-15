@@ -10,9 +10,17 @@
 
 ![img_5.png](img_5.png)
 
+![img_9.png](img_9.png)
+
+The AuthenticationManager receives a request from the HTTP filter layer and delegates the responsibility to authenticate the user to the AuthenticationProvider.
+
+- If the user making the request is not authenticated, the response status sent back to the client is HTTP 401 Unauthorized.
+- If the user is authenticated, user details along with authentication status are stored in the SecurityContext.
+
 ![img_6.png](img_6.png)
 
 ![img_7.png](img_7.png)
+
 ![img_8.png](img_8.png)
 
 ![img_1.png](img_1.png)

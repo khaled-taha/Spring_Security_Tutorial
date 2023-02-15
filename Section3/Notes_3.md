@@ -2,6 +2,7 @@
 
 After applying the security configuration, we can define users for this application.
 
+
 There are many ways to do that:
 
 1 - Define a single static user inside the application.properties
