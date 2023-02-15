@@ -405,4 +405,4 @@ that deals with the fields of your new schema.
 
 You must do that in order for AuthenticationProvider to deal with your DB
 
-[Example](../Section3/Notes_3.md)
+[Example](../Section3/JDBCAuthentication)
