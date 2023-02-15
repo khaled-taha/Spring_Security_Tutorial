@@ -405,4 +405,4 @@ that deals with the fields of your new schema.
 
 You must do that in order for AuthenticationProvider to deal with your DB
 
-<a src="Section3/JDBCAuthentication/src/main/java/com/SpringSecurity/Service/UserLoaderService.java">Example</a>
+[Example](Spring_Security_Tutorial/edit/main/Section3/Notes_3.md)
