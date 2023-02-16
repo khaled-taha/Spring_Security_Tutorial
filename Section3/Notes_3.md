@@ -407,3 +407,635 @@ that deals with the fields of your new schema.
 You must do that in order for AuthenticationProvider to deal with your DB
 
 [Example](../Section3/JDBCAuthentication)
+------------------------------------------------------------------------------------
+
+## Spring Security Authentication Process Explained In Detailed [Core classes and interfaces]
+
+## Authentication
+
+- It is a core interface that represents security information(Principal, Credentials, Authority list, etc.)
+  in a spring security specific manner used by the framework whenever there is a need to get authentication details of a particular request.
+
+- Frequently used implementation of the “Authentication” interface is <b>“UsernamePasswordAuthenticationToken”</b>.
+  It is not a direct subclass of “Authentication” but it is a child of an abstract class that implements an “Authentication” interface.
+
+![img_3.png](img_3.png)
+
+### The Authentication contains:
+
+- principal: Identifies the user. When authenticating with a username/password this is often an instance of UserDetails.
+
+- credentials: Often a password. In many cases, this is cleared after the user is authenticated, to ensure that it is not leaked.
+
+- authorities: The GrantedAuthority instances are high-level permissions the user is granted. Two examples are roles and scopes.
+
+```java
+public interface Authentication extends Principal, Serializable {
+    Collection<? extends GrantedAuthority> getAuthorities();
+
+    Object getCredentials();
+
+    Object getDetails();
+
+    Object getPrincipal();
+
+    boolean isAuthenticated();
+
+    void setAuthenticated(boolean isAuthenticated) throws IllegalArgumentException;
+}
+```
+
+```java
+public abstract class AbstractAuthenticationToken implements Authentication, CredentialsContainer {
+    private final Collection<GrantedAuthority> authorities;
+    private Object details;
+    private boolean authenticated = false;
+
+    public AbstractAuthenticationToken(Collection<? extends GrantedAuthority> authorities) {
+        if (authorities == null) {
+            this.authorities = AuthorityUtils.NO_AUTHORITIES;
+        } else {
+            Iterator var2 = authorities.iterator();
+
+            while(var2.hasNext()) {
+                GrantedAuthority a = (GrantedAuthority)var2.next();
+                Assert.notNull(a, "Authorities collection cannot contain any null elements");
+            }
+
+            this.authorities = Collections.unmodifiableList(new ArrayList(authorities));
+        }
+    }
+
+    public Collection<GrantedAuthority> getAuthorities() {
+        return this.authorities;
+    }
+
+    public String getName() {
+        if (this.getPrincipal() instanceof UserDetails) {
+            return ((UserDetails)this.getPrincipal()).getUsername();
+        } else if (this.getPrincipal() instanceof AuthenticatedPrincipal) {
+            return ((AuthenticatedPrincipal)this.getPrincipal()).getName();
+        } else if (this.getPrincipal() instanceof Principal) {
+            return ((Principal)this.getPrincipal()).getName();
+        } else {
+            return this.getPrincipal() == null ? "" : this.getPrincipal().toString();
+        }
+    }
+
+    public boolean isAuthenticated() {
+        return this.authenticated;
+    }
+
+    public void setAuthenticated(boolean authenticated) {
+        this.authenticated = authenticated;
+    }
+
+    public Object getDetails() {
+        return this.details;
+    }
+
+    public void setDetails(Object details) {
+        this.details = details;
+    }
+
+    public void eraseCredentials() {
+        this.eraseSecret(this.getCredentials());
+        this.eraseSecret(this.getPrincipal());
+        this.eraseSecret(this.details);
+    }
+
+    private void eraseSecret(Object secret) {
+        if (secret instanceof CredentialsContainer) {
+            ((CredentialsContainer)secret).eraseCredentials();
+        }
+
+    }
+
+    public boolean equals(Object obj) {
+        if (!(obj instanceof AbstractAuthenticationToken test)) {
+            return false;
+        } else if (!this.authorities.equals(test.authorities)) {
+            return false;
+        } else if (this.details == null && test.getDetails() != null) {
+            return false;
+        } else if (this.details != null && test.getDetails() == null) {
+            return false;
+        } else if (this.details != null && !this.details.equals(test.getDetails())) {
+            return false;
+        } else if (this.getCredentials() == null && test.getCredentials() != null) {
+            return false;
+        } else if (this.getCredentials() != null && !this.getCredentials().equals(test.getCredentials())) {
+            return false;
+        } else if (this.getPrincipal() == null && test.getPrincipal() != null) {
+            return false;
+        } else if (this.getPrincipal() != null && !this.getPrincipal().equals(test.getPrincipal())) {
+            return false;
+        } else {
+            return this.isAuthenticated() == test.isAuthenticated();
+        }
+    }
+
+    public int hashCode() {
+        int code = 31;
+
+        GrantedAuthority authority;
+        for(Iterator var2 = this.authorities.iterator(); var2.hasNext(); code ^= authority.hashCode()) {
+            authority = (GrantedAuthority)var2.next();
+        }
+
+        if (this.getPrincipal() != null) {
+            code ^= this.getPrincipal().hashCode();
+        }
+
+        if (this.getCredentials() != null) {
+            code ^= this.getCredentials().hashCode();
+        }
+
+        if (this.getDetails() != null) {
+            code ^= this.getDetails().hashCode();
+        }
+
+        if (this.isAuthenticated()) {
+            code ^= -37;
+        }
+
+        return code;
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.getClass().getSimpleName()).append(" [");
+        sb.append("Principal=").append(this.getPrincipal()).append(", ");
+        sb.append("Credentials=[PROTECTED], ");
+        sb.append("Authenticated=").append(this.isAuthenticated()).append(", ");
+        sb.append("Details=").append(this.getDetails()).append(", ");
+        sb.append("Granted Authorities=").append(this.authorities);
+        sb.append("]");
+        return sb.toString();
+    }
+}
+
+```
+
+```java
+public class UsernamePasswordAuthenticationToken extends AbstractAuthenticationToken {
+    private static final long serialVersionUID = 600L;
+    private final Object principal;
+    private Object credentials;
+
+    public UsernamePasswordAuthenticationToken(Object principal, Object credentials) {
+        super((Collection)null);
+        this.principal = principal;
+        this.credentials = credentials;
+        this.setAuthenticated(false);
+    }
+
+    public UsernamePasswordAuthenticationToken(Object principal, Object credentials, Collection<? extends GrantedAuthority> authorities) {
+        super(authorities);
+        this.principal = principal;
+        this.credentials = credentials;
+        super.setAuthenticated(true);
+    }
+
+    public static UsernamePasswordAuthenticationToken unauthenticated(Object principal, Object credentials) {
+        return new UsernamePasswordAuthenticationToken(principal, credentials);
+    }
+
+    public static UsernamePasswordAuthenticationToken authenticated(Object principal, Object credentials, Collection<? extends GrantedAuthority> authorities) {
+        return new UsernamePasswordAuthenticationToken(principal, credentials, authorities);
+    }
+
+    public Object getCredentials() {
+        return this.credentials;
+    }
+
+    public Object getPrincipal() {
+        return this.principal;
+    }
+
+    public void setAuthenticated(boolean isAuthenticated) throws IllegalArgumentException {
+        Assert.isTrue(!isAuthenticated, "Cannot set this token to trusted - use constructor which takes a GrantedAuthority list instead");
+        super.setAuthenticated(false);
+    }
+
+    public void eraseCredentials() {
+        super.eraseCredentials();
+        this.credentials = null;
+    }
+}
+```
+
+----------------------------------------------------------------------------------------------------------------
+
+## AuthenticationManager
+
+- It is a core interface that spring security uses for the authentication process.
+- It has only one method authenticate which when implemented in a class that implements an Authentication Manager has all the logic for authenticating a user request. 
+- The authenticate method takes an “Authentication” object as its parameter and returns an “Authentication” object on successful authentication of the user or else we can have an exception thrown indicating that the user is not authenticated. 
+- Spring security has a default implementation for Authentication Manager that is <b>“ProviderManager”</b> which itself delegates the authentication request to list of configured “AuthenticationProvider”s which can either return a fully populated “Authentication” object, throw an exception when authentication is failed or return null if it needs to skip the authentication for a particular authentication request.
+
+```java
+public interface AuthenticationManager {
+    Authentication authenticate(Authentication authentication) throws AuthenticationException;
+}
+```
+
+```java
+public class ProviderManager implements AuthenticationManager, MessageSourceAware, InitializingBean {
+    private static final Log logger = LogFactory.getLog(ProviderManager.class);
+    private AuthenticationEventPublisher eventPublisher;
+    private List<AuthenticationProvider> providers;
+    protected MessageSourceAccessor messages;
+    private AuthenticationManager parent;
+    private boolean eraseCredentialsAfterAuthentication;
+
+    public ProviderManager(AuthenticationProvider... providers) {
+        this(Arrays.asList(providers), (AuthenticationManager)null);
+    }
+
+    public ProviderManager(List<AuthenticationProvider> providers) {
+        this(providers, (AuthenticationManager)null);
+    }
+
+    public ProviderManager(List<AuthenticationProvider> providers, AuthenticationManager parent) {
+        this.eventPublisher = new NullEventPublisher();
+        this.providers = Collections.emptyList();
+        this.messages = SpringSecurityMessageSource.getAccessor();
+        this.eraseCredentialsAfterAuthentication = true;
+        Assert.notNull(providers, "providers list cannot be null");
+        this.providers = providers;
+        this.parent = parent;
+        this.checkState();
+    }
+
+    public void afterPropertiesSet() {
+        this.checkState();
+    }
+
+    private void checkState() {
+        Assert.isTrue(this.parent != null || !this.providers.isEmpty(), "A parent AuthenticationManager or a list of AuthenticationProviders is required");
+        Assert.isTrue(!CollectionUtils.contains(this.providers.iterator(), (Object)null), "providers list cannot contain null values");
+    }
+
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        Class<? extends Authentication> toTest = authentication.getClass();
+        AuthenticationException lastException = null;
+        AuthenticationException parentException = null;
+        Authentication result = null;
+        Authentication parentResult = null;
+        int currentPosition = 0;
+        int size = this.providers.size();
+        Iterator var9 = this.getProviders().iterator();
+
+        while(var9.hasNext()) {
+            AuthenticationProvider provider = (AuthenticationProvider)var9.next();
+            if (provider.supports(toTest)) {
+                if (logger.isTraceEnabled()) {
+                    Log var10000 = logger;
+                    String var10002 = provider.getClass().getSimpleName();
+                    ++currentPosition;
+                    var10000.trace(LogMessage.format("Authenticating request with %s (%d/%d)", var10002, currentPosition, size));
+                }
+
+                try {
+                    result = provider.authenticate(authentication);
+                    if (result != null) {
+                        this.copyDetails(authentication, result);
+                        break;
+                    }
+                } catch (InternalAuthenticationServiceException | AccountStatusException var14) {
+                    this.prepareException(var14, authentication);
+                    throw var14;
+                } catch (AuthenticationException var15) {
+                    lastException = var15;
+                }
+            }
+        }
+
+        if (result == null && this.parent != null) {
+            try {
+                parentResult = this.parent.authenticate(authentication);
+                result = parentResult;
+            } catch (ProviderNotFoundException var12) {
+            } catch (AuthenticationException var13) {
+                parentException = var13;
+                lastException = var13;
+            }
+        }
+
+        if (result != null) {
+            if (this.eraseCredentialsAfterAuthentication && result instanceof CredentialsContainer) {
+                ((CredentialsContainer)result).eraseCredentials();
+            }
+
+            if (parentResult == null) {
+                this.eventPublisher.publishAuthenticationSuccess(result);
+            }
+
+            return result;
+        } else {
+            if (lastException == null) {
+                lastException = new ProviderNotFoundException(this.messages.getMessage("ProviderManager.providerNotFound", new Object[]{toTest.getName()}, "No AuthenticationProvider found for {0}"));
+            }
+
+            if (parentException == null) {
+                this.prepareException((AuthenticationException)lastException, authentication);
+            }
+
+            throw lastException;
+        }
+    }
+
+    private void prepareException(AuthenticationException ex, Authentication auth) {
+        this.eventPublisher.publishAuthenticationFailure(ex, auth);
+    }
+
+    private void copyDetails(Authentication source, Authentication dest) {
+        if (dest instanceof AbstractAuthenticationToken token && dest.getDetails() == null) {
+            token.setDetails(source.getDetails());
+        }
+
+    }
+
+    public List<AuthenticationProvider> getProviders() {
+        return this.providers;
+    }
+
+    public void setMessageSource(MessageSource messageSource) {
+        this.messages = new MessageSourceAccessor(messageSource);
+    }
+
+    public void setAuthenticationEventPublisher(AuthenticationEventPublisher eventPublisher) {
+        Assert.notNull(eventPublisher, "AuthenticationEventPublisher cannot be null");
+        this.eventPublisher = eventPublisher;
+    }
+
+    public void setEraseCredentialsAfterAuthentication(boolean eraseSecretData) {
+        this.eraseCredentialsAfterAuthentication = eraseSecretData;
+    }
+
+    public boolean isEraseCredentialsAfterAuthentication() {
+        return this.eraseCredentialsAfterAuthentication;
+    }
+
+    private static final class NullEventPublisher implements AuthenticationEventPublisher {
+        private NullEventPublisher() {
+        }
+
+        public void publishAuthenticationFailure(AuthenticationException exception, Authentication authentication) {
+        }
+
+        public void publishAuthenticationSuccess(Authentication authentication) {
+        }
+    }
+}
+
+```
+We can create out custom implementation:
+
+```java
+public class CustomAuthenticationManager implements AuthenticationManager {
+
+    @Autowired
+    UserRepo userRepo;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        Optional<User> user = userRepo.findByUserName(authentication.getName());
+        if (user.isPresent()) {
+            if (passwordEncoder.matches(authentication.getCredentials().toString(), user.get().getPassword())) {
+                List<GrantedAuthority> grantedAuthorityList = new ArrayList<>();
+                for (Role role : user.get().getRoleSet()) {
+                    grantedAuthorityList.add(new SimpleGrantedAuthority(role.getName()));
+                }
+                return new UsernamePasswordAuthenticationToken(authentication.getPrincipal(), authentication.getCredentials(), grantedAuthorityList);
+            } else {
+                throw new BadCredentialsException("Wrong Password");
+            }
+        } else {
+            throw new BadCredentialsException("Wrong UserName");
+        }
+    }
+}
+```
+
+------------------------------------------------------------------------------------------------
+
+## UserDetailsService
+
+- It is a core interface that is used by spring security to return the “UserDetails” object.
+- It is purely used to return user data wrapped in the form of “UserDetails”.
+- It has one method loadUserByUsername(String userName). As you can see it takes one String-based argument username and it returns a “UserDetails” object.
+- The only purpose of “UserDetailsService” is to provide a “UserDetails” object to other components of the spring security framework.
+
+```java
+public interface UserDetailsService {
+    UserDetails loadUserByUsername(String username) throws UsernameNotFoundException;
+}
+```
+
+------------------------------------------------------------------------------------------------
+
+## UserDetails
+- It acts as an adapter between your application’s user representation and the representation of the user’s details that are needed by the spring security framework in the “SecurityContextHolder” which is basically used to build the “Authentication” object and have other functionality too which is described in next section.
+
+- “UserDetails” basically holds principals, credentials, authorities and other information that is regarding a particular user.
+
+## GrantedAuthority
+- It is an interface that represents authorities that are granted to the user. A class implementing this interface should provide the representation of the user authority that is supported by “AccessDecisionManager” that we will cover in the next article that is on Authorization in spring security.
+
+- It is provided in the “UserDetails” object and used to give application-wide permissions. It should not be used to give per object permission for that spring security provided other interface.
+
+- It is usually loaded in “UserDetailsService” implementation.
+
+## SecurityContextHolder
+- It is a core class of the framework that is used to store “SecurityContext” information of the principal currently using the application.
+
+- “SecurityContext”: Information that represents the Authentication and Authorization information of the user currently access the application.
+
+
+------------------------------------------------------------------------------------------------
+
+## Authentication Flow:
+
+![img_11.png](img_11.png)
+
+1 - login (username and password)
+
+2 - create a UsernamePasswordAuthenticationToken object by attemptAuthentication method in UsernamePasswordAuthenticationFilter
+
+```java
+public class UsernamePasswordAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
+    public static final String SPRING_SECURITY_FORM_USERNAME_KEY = "username";
+    public static final String SPRING_SECURITY_FORM_PASSWORD_KEY = "password";
+    private static final AntPathRequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/login", "POST");
+    private String usernameParameter = "username";
+    private String passwordParameter = "password";
+    private boolean postOnly = true;
+
+    public UsernamePasswordAuthenticationFilter() {
+        super(DEFAULT_ANT_PATH_REQUEST_MATCHER);
+    }
+
+    public UsernamePasswordAuthenticationFilter(AuthenticationManager authenticationManager) {
+        super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
+    }
+
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+        if (this.postOnly && !request.getMethod().equals("POST")) {
+            throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
+        } else {
+            String username = this.obtainUsername(request);
+            username = username != null ? username.trim() : "";
+            String password = this.obtainPassword(request);
+            password = password != null ? password : "";
+            UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
+            this.setDetails(request, authRequest);
+            return this.getAuthenticationManager().authenticate(authRequest);
+        }
+    }
+
+    @Nullable
+    protected String obtainPassword(HttpServletRequest request) {
+        return request.getParameter(this.passwordParameter);
+    }
+
+    @Nullable
+    protected String obtainUsername(HttpServletRequest request) {
+        return request.getParameter(this.usernameParameter);
+    }
+
+    protected void setDetails(HttpServletRequest request, UsernamePasswordAuthenticationToken authRequest) {
+        authRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
+    }
+
+    public void setUsernameParameter(String usernameParameter) {
+        Assert.hasText(usernameParameter, "Username parameter must not be empty or null");
+        this.usernameParameter = usernameParameter;
+    }
+
+    public void setPasswordParameter(String passwordParameter) {
+        Assert.hasText(passwordParameter, "Password parameter must not be empty or null");
+        this.passwordParameter = passwordParameter;
+    }
+
+    public void setPostOnly(boolean postOnly) {
+        this.postOnly = postOnly;
+    }
+
+    public final String getUsernameParameter() {
+        return this.usernameParameter;
+    }
+
+    public final String getPasswordParameter() {
+        return this.passwordParameter;
+    }
+}
+
+```
+
+3 - This method call <b>authenticate method of ProviderManager</b> and pass (username and password) that stored in UsernamePasswordAuthenticationToken object
+
+```java
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+        if (this.postOnly && !request.getMethod().equals("POST")) {
+            throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
+        } else {
+            String username = this.obtainUsername(request);
+            username = username != null ? username.trim() : "";
+            String password = this.obtainPassword(request);
+            password = password != null ? password : "";
+            UsernamePasswordAuthenticationToken authRequest = UsernamePasswordAuthenticationToken.unauthenticated(username, password);
+            this.setDetails(request, authRequest);
+            return this.getAuthenticationManager().authenticate(authRequest);
+        }
+    }
+```
+
+4 - The authenticate method of ProviderManager calls the authenticate method of the AuthenticationProvider (DaoAuthenticationProvider)
+
+```java
+public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        Assert.isInstanceOf(UsernamePasswordAuthenticationToken.class, authentication, () -> {
+            return this.messages.getMessage("AbstractUserDetailsAuthenticationProvider.onlySupports", "Only UsernamePasswordAuthenticationToken is supported");
+        });
+        String username = this.determineUsername(authentication);
+        boolean cacheWasUsed = true;
+        UserDetails user = this.userCache.getUserFromCache(username);
+        if (user == null) {
+            cacheWasUsed = false;
+
+            try {
+                user = this.retrieveUser(username, (UsernamePasswordAuthenticationToken)authentication);
+            } catch (UsernameNotFoundException var6) {
+                this.logger.debug("Failed to find user '" + username + "'");
+                if (!this.hideUserNotFoundExceptions) {
+                    throw var6;
+                }
+
+                throw new BadCredentialsException(this.messages.getMessage("AbstractUserDetailsAuthenticationProvider.badCredentials", "Bad credentials"));
+            }
+
+            Assert.notNull(user, "retrieveUser returned null - a violation of the interface contract");
+        }
+
+        try {
+            this.preAuthenticationChecks.check(user);
+            this.additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken)authentication);
+        } catch (AuthenticationException var7) {
+            if (!cacheWasUsed) {
+                throw var7;
+            }
+
+            cacheWasUsed = false;
+            user = this.retrieveUser(username, (UsernamePasswordAuthenticationToken)authentication);
+            this.preAuthenticationChecks.check(user);
+            this.additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken)authentication);
+        }
+
+        this.postAuthenticationChecks.check(user);
+        if (!cacheWasUsed) {
+            this.userCache.putUserInCache(user);
+        }
+
+        Object principalToReturn = user;
+        if (this.forcePrincipalAsString) {
+            principalToReturn = user.getUsername();
+        }
+
+        return this.createSuccessAuthentication(principalToReturn, authentication, user);
+    }
+
+```
+
+
+5 - This method calls the retrieveUser method that calls loadUserByUsername method of the UserDetailsManger to complete the authentication process.
+
+```java
+    protected final UserDetails retrieveUser(String username, UsernamePasswordAuthenticationToken authentication) throws AuthenticationException {
+        this.prepareTimingAttackProtection();
+
+        try {
+            UserDetails loadedUser = this.getUserDetailsService().loadUserByUsername(username);
+            if (loadedUser == null) {
+                throw new InternalAuthenticationServiceException("UserDetailsService returned null, which is an interface contract violation");
+            } else {
+                return loadedUser;
+            }
+        } catch (UsernameNotFoundException var4) {
+            this.mitigateAgainstTimingAttack(authentication);
+            throw var4;
+        } catch (InternalAuthenticationServiceException var5) {
+            throw var5;
+        } catch (Exception var6) {
+            throw new InternalAuthenticationServiceException(var6.getMessage(), var6);
+        }
+    }
+```
+
+6 - The result of authentication is returned to the authentication filter
+
+7 - Details of the authentication entity will be stored in the security context

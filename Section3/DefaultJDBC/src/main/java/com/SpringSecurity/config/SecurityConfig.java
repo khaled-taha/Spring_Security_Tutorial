@@ -2,7 +2,12 @@ package com.SpringSecurity.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,34 +37,34 @@ public class SecurityConfig {
 
 
     // load users to DB
-    @Bean
-    JdbcUserDetailsManager users(DataSource dataSource) {
-        UserDetails user = User.builder()
-                .username("user")
-                .password(passwordEncoder().encode("user123"))
-                .disabled(false)
-                .authorities("user")
-                .build();
-        UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder().encode("admin123"))
-                .disabled(false)
-                .authorities("admin")
-                .build();
-        JdbcUserDetailsManager users = new JdbcUserDetailsManager(dataSource);
-        users.createUser(user);
-        users.createUser(admin);
-        return users;
-    }
+//    @Bean
+//    JdbcUserDetailsManager users(DataSource dataSource) {
+//        UserDetails user = User.builder()
+//                .username("user")
+//                .password(passwordEncoder().encode("user123"))
+//                .disabled(false)
+//                .authorities("user")
+//                .build();
+//        UserDetails admin = User.builder()
+//                .username("admin")
+//                .password(passwordEncoder().encode("admin123"))
+//                .disabled(false)
+//                .authorities("admin")
+//                .build();
+//        JdbcUserDetailsManager users = new JdbcUserDetailsManager(dataSource);
+//        users.createUser(user);
+//        users.createUser(admin);
+//        return users;
+//    }
 
     // If your DB contains user details, you will use the following method.
 
-    /*
+
     @Bean
-    UserDetailsService userDetailsService(DataSource dataSource){
+    UserDetailsService userDetailsService(DataSource dataSource) {
         return new JdbcUserDetailsManager(dataSource);
     }
-    */
+
 
     /*
     Spring Boot will automatically create an object of data source inside my web application.
