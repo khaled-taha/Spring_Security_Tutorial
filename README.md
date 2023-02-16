@@ -6,3 +6,5 @@
 
 ## Section 3: Defining and Managing Users
 
+## Section 4: Password Management with passwordEncoders
+
