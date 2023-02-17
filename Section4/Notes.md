@@ -207,6 +207,8 @@ the defaults are 185000 for the number of iterations and 256 for the length of t
 
 ###  BCryptPasswordEncoder
 
+![img_8.png](img_8.png)
+
 Which uses a bcrypt strong hashing function to encode the password.
 
 You can instantiate the BCryptPasswordEncoder by calling the no-arguments constructor.
@@ -325,4 +327,50 @@ we can understand the hashing as a pair of functions for encoding and matching.
 
 If hashing is x -> y, then we should also have a matching function (x,y) -> boolean.
 
+Sometimes the hashing function could also use a random value added to the input:
+
+(x, k) -> y. We refer to this value as the salt. The salt makes the function stronger, enforcing the difficulty of applying a reverse function to obtain the input from the
+result.
+
 ![img_7.png](img_7.png)
+
+------------------------------------------------------------------------------------------------------
+
+## How this hashing works with the authentication process:
+
+![img_9.png](img_9.png)
+
+
+1 - Inside the first operation, the user entered his credentials, hich is like admin and 1, 2, 3, 4, 5.
+
+2 - Behind the scenes, spring security will leverage one of the password encoders, and with the help of this password encoders
+    it will try to hash the password which is entered by the end user.
+
+- First suppose think like this hash password starts with F32C followed by ADV.
+
+- So this is how the hash string of this password is going to look like.
+
+3 - So once this hashing is completed, behind the scenes my spring security also will load the existing hash value
+    that is generated during the registration process of an end user from the database.
+
+- And it will hold this hash value inside the user details object.
+
+- And this hash string that we fetched from the database is looking like G22 hash, followed by BEF.
+
+4 - So think like this is how the hash string is going to look like which we fetch from the database.
+
+- If you look at both hash strings they are really different, but the hash value will be same.
+
+- And if this hash value is same, my login operation will be successful, otherwise my login operation will fail.
+
+- So my password encoders will take care of all these matching of the hash strings and finding the hash values of them and making sure whether the hash values matches or not.
+
+- So during this entire operation you can see: 
+
+1 - we are never storing the plain text to passwords inside the database.
+
+2 - And at the same time, while comparing the passwords also, we are not comparing them in a plain text to password.
+
+- Everything we are dealing in the style of hash strings.
+
+- So this hashing standards brings a lot of advantages when we are dealing with the passwords management because it is super, super secure, and it is not reversible.
