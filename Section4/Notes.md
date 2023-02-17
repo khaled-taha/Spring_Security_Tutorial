@@ -303,3 +303,26 @@ that returns the implementation of the DelegatingPasswordEncoder with bcrypt as 
 ```java
 PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
 ```
+----------------------------------------------------------------------------------------------------------
+
+## Encoding vs. encrypting vs. hashing
+
+1 - Encoding refers to any transformation of a given input.
+
+For example, if we have a function x that reverses a string, function x -> y applied to ABCD produces DCBA.
+
+
+2 - Encryption is a particular type of encoding where, to obtain the output, you provide both the input value and a key.
+
+The key makes it possible for choosing afterward who should be able to reverse the function
+
+3 - Hashing is a particular type of encoding, except the function is only one way.
+
+That is, from an output y of the hashing function, you cannot get back the input x.
+
+However, there should always be a way to check if an output y corresponds to an input x, so
+we can understand the hashing as a pair of functions for encoding and matching.
+
+If hashing is x -> y, then we should also have a matching function (x,y) -> boolean.
+
+![img_7.png](img_7.png)
