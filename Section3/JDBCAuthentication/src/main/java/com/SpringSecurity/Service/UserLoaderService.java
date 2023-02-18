@@ -29,6 +29,7 @@ public class UserLoaderService implements UserDetailsService {
         List<GrantedAuthority> authorities;
 
         List<Student> users = this.userRepository.findByEmail(username);
+        System.out.println("sdf");
         if(users.size() == 0)
             throw new UsernameNotFoundException("Email Not Found Exception");
 

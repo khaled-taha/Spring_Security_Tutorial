@@ -1,13 +1,12 @@
 package com.SpringSecurity.models;
 
-
 import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "authorities")
+@Table(name = "users")
 @Data
-public class Authority {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,9 +16,10 @@ public class Authority {
     @Column(name = "username")
     private String username;
 
-    @Column(name = "authority")
-    private String authority;
+    @Column(name = "password")
+    private String password;
 
-
+    @Column(name = "enabled")
+    private boolean enabled;
 
 }

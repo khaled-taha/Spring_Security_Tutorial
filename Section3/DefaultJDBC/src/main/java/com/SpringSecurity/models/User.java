@@ -3,6 +3,9 @@ package com.SpringSecurity.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.springframework.security.core.GrantedAuthority;
+
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -14,7 +17,7 @@ public class User {
     @Column(name = "id")
     private long id;
 
-    @Column(name = "name")
+    @Column(name = "username")
     private String username;
 
     @Column(name = "password")
@@ -22,4 +25,5 @@ public class User {
 
     @Column(name = "enabled")
     private boolean enabled;
+
 }

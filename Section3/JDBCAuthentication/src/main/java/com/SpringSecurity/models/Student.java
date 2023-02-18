@@ -6,7 +6,7 @@ import lombok.Data;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Entity
-@Table(name = "student", schema = "student")
+@Table(name = "student", schema = "studentDB")
 @Data
 public class Student {
 
